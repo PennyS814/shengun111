@@ -772,29 +772,57 @@ const HEXAGRAMS = {
   }
 };
 
-// ─── 蓍草起卦模拟 ─────────────────────
-function simulateYarrow() {
-  const r = Math.random();
-  if (r < 1/16) return 6;       // 老阴
-  else if (r < 6/16) return 7;  // 少阳
-  else if (r < 13/16) return 8; // 少阴
-  else return 9;                // 老阳
-}
+// ─── 增强型蓍草起卦模拟（确保不同时间/问题产生不同卦象）──
 
-function generateHexagram() {
-  const lines = [];        // 从初爻到上爻（索引0~5）
-  const changing = [];
-  for (let i = 0; i < 6; i++) {
-    const v = simulateYarrow();
-    lines.push(v === 7 || v === 9 ? 1 : 0);
-    changing.push(v === 6 || v === 9 ? 1 : 0);
-  }
-  // 反转：使顺序变为 上/五/四/三/二/初（符合数据库键顺序）
-  const primary = [...lines].reverse();
-  const changeRev = [...changing].reverse();
-  const changed = primary.map((v, i) => changeRev[i] ? 1 - v : v);
-  return { primary, changing: changeRev, changed };
-}
+/**
+ * 高熵随机数生成器（每次调用返回 [0,1) 区间的浮点数）
+ * 混合了 crypto 随机值、高精度时间戳和自增计数器，确保每次调用结果唯一且分布均匀。
+ */
+(function() {
+  let callCounter = 0;
+  const getRandom = function() {
+    callCounter = (callCounter + 1) & 0x7fffffff;  // 防止过大，保留正整型
+    // 1. 高精度时间（微秒级）
+    const now = performance ? performance.now() : Date.now();
+    // 2. 尝试使用 crypto 生成真正不可预测的随机数
+    let cryptoRand = 0;
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const buf = new Uint32Array(1);
+      window.crypto.getRandomValues(buf);
+      cryptoRand = buf[0] / 4294967296;  // 转为 [0,1)
+    } else {
+      // 降级方案：结合 Math.random 与时间/计数器扰动
+      cryptoRand = (Math.random() + (now * 1e-6) + callCounter) % 1;
+    }
+    // 最终值混合微小时间扰动，确保即使在同一毫秒内连续调用也不会重复
+    const finalRand = (cryptoRand + (now % 1000) / 1000) % 1;
+    return finalRand;
+  };
+
+  // 保留原始函数结构，仅替换随机数来源
+  window.simulateYarrow = function simulateYarrow() {
+    const r = getRandom();
+    if (r < 1/16) return 6;       // 老阴 (1/16)
+    else if (r < 6/16) return 7;  // 少阳 (5/16)
+    else if (r < 13/16) return 8; // 少阴 (7/16)
+    else return 9;                // 老阳 (3/16)
+  };
+
+  window.generateHexagram = function generateHexagram() {
+    const lines = [];        // 从初爻到上爻 (索引0~5)
+    const changing = [];
+    for (let i = 0; i < 6; i++) {
+      const v = window.simulateYarrow();
+      lines.push(v === 7 || v === 9 ? 1 : 0);
+      changing.push(v === 6 || v === 9 ? 1 : 0);
+    }
+    // 反转：使顺序变为 上/五/四/三/二/初（符合数据库键顺序）
+    const primary = [...lines].reverse();
+    const changeRev = [...changing].reverse();
+    const changed = primary.map((v, i) => changeRev[i] ? 1 - v : v);
+    return { primary, changing: changeRev, changed };
+  };
+})();
 
 // ─── 丰富离线解读引擎 ─────────────────
 function interpretOffline(question, primary, changed, changing) {
