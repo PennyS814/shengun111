@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>易经占卜 · 灵签</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">易 经 占 卜</h1>
+    <div class="subtitle">—— 问天问道问己心 ——</div>
+
+    <div class="card" id="inputCard">
+      <textarea id="question" placeholder="请输入您想问的事情……"></textarea>
+      <button id="divineBtn">起 卦</button>
+      <div class="loading" id="loading">⏳ 演算天机……</div>
+    </div>
+
+    <div class="card" id="resultCard" style="display: none;">
+      <div class="hex-info">
+        <div class="hex-block">
+          <div class="hex-name" id="primaryName"></div>
+          <div class="hex-text" id="primaryText"></div>
+        </div>
+        <div class="hex-block">
+          <div class="hex-name" id="changedName"></div>
+          <div class="hex-text" id="changedText"></div>
+        </div>
+      </div>
+      <div class="moving" id="movingLines"></div>
+      <div class="advice-box" id="adviceContent"></div>
+      <button class="btn-again" onclick="window.location.reload()">再问一卦</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
